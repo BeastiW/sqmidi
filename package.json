@@ -1,0 +1,10 @@
+{
+    "name": "sqmidi",
+    "version": "0.0.1",
+    "dependencies": {
+        "midi": "latest"
+    },
+    "scripts": {
+        "start": "node src/main"
+    }
+}
