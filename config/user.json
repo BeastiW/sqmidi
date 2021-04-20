@@ -1,0 +1,25 @@
+[{
+    "comment": "Softkey 1 - Mute GRP 1",
+    "msb": "0x04",
+    "lsb": "0x00",
+    "xtouch_on":  [144,40,127],
+    "xtouch_off":  [128,40,0]
+},{
+    "comment": "Softkey 2 - Mute GRP 2",
+    "msb": "0x04",
+    "lsb": "0x01",
+    "xtouch_on":  [144,41,127],
+    "xtouch_off":  [128,41,0]
+},{
+    "comment": "Softkey 3 - Mute GRP 3",
+    "msb": "0x04",
+    "lsb": "0x02",
+    "xtouch_on":  [144,42,127],
+    "xtouch_off":  [128,42,0]
+},{
+    "comment": "Softkey 4 - Mute GRP 4",
+    "msb": "0x04",
+    "lsb": "0x03",
+    "xtouch_on":  [144,43,127],
+    "xtouch_off":  [128,43,0]
+}]

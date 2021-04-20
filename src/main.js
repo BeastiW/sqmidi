@@ -1,10 +1,16 @@
 const midi = require('midi');
 
 const config  =  require('../config/faders.json');
+const configUser  =  require('../config/user.json');
 
 config.forEach(oFader => {
   oFader.msb  =  parseInt(oFader.msb,16);
   oFader.lsb  =  parseInt(oFader.lsb,16);
+})
+configUser.forEach(oButton => {
+  oButton.msb  =  parseInt(oButton.msb,16);
+  oButton.lsb  =  parseInt(oButton.lsb,16);
+  oButton.active = false;
 })
 
 // Set up a new input.
@@ -14,14 +20,12 @@ const inputSQ5 = new midi.Input();
 // Set up a new output.
 const output = new midi.Output();
 const outputSQ5 = new midi.Output();
-// const outputSQ5out = new midi.Output();
 
 
 let foundMixerIndexInput = -1;
 let foundSQ5IndexInput = -1;
 let foundMixerIndexOutput = -1;
 let foundSQ5IndexOutput = -1;
-// let foundSQ5outIndexOutput = -1;
 
 // Count the available input ports.
 for (let ii = 0; ii < input.getPortCount(); ii ++) {
@@ -41,9 +45,6 @@ for (let ii = 0; ii < output.getPortCount(); ii ++) {
   if (output.getPortName(ii).includes("MIDI Thru")) {
     foundSQ5IndexOutput = ii;
   }
-  // if (input.getPortName(ii).includes("CC Translator Outputs")) {
-  //   foundSQ5outIndexOutput = ii;
-  // }
 }
 
 
@@ -58,23 +59,41 @@ input.on('message', (deltaTime, message) => {
   // simulate change of Xtouch compact
   if (message[0] === 176) {
     const oFaderConf = config.find(oEntry => oEntry.xtouch_fader ===  message[1]);
-    if (!oFaderConf) {
-      return;
-    }
-    const iValue =  (Math.log2( message[2] + 1 ) / 7) * 127;
-    console.log(`Sending value ${iValue} to channel ${message[1]}`);
+    if (oFaderConf) {
+      const iValue =  (Math.log2( message[2] + 1 ) / 7) * 127;
+      console.log(`Sending value ${iValue} to channel ${message[1]}`);
 
-    if (!oFaderConf.output) {
       outputSQ5.sendMessage([0xB0,0x63,oFaderConf.msb]);
       outputSQ5.sendMessage([0xB0,0x62,oFaderConf.lsb]);
       outputSQ5.sendMessage([0xB0,0x06,iValue]);
-      outputSQ5.sendMessage([0xB0,38,0]);
+      outputSQ5.sendMessage([0xB0,0x26,0]);
     }
-    else {
-      outputSQ5.sendMessage([0xB0,0x63,oFaderConf.msb]);
-      outputSQ5.sendMessage([0xB0,0x62,oFaderConf.lsb]);
-      outputSQ5.sendMessage([0xB0,0x06,iValue]);
-      outputSQ5.sendMessage([0xB0,38,0]);
+  }
+
+  if  (message[0] === 144) {
+
+    // compare input message with attribute xtouch_on (configured message)
+    const messageClone = message.slice().sort();
+    const oUserConf = configUser.find(oEntry => oEntry.xtouch_on.length === messageClone.length && 
+      oEntry.xtouch_on.slice().sort().every(function(value, index) {
+        return value === messageClone[index];
+    }));
+    if (oUserConf) {
+      outputSQ5.sendMessage([0xB0,0x63,oUserConf.msb]);
+      outputSQ5.sendMessage([0xB0,0x62,oUserConf.lsb]);
+      outputSQ5.sendMessage([0xB0,0x06,0]);
+      outputSQ5.sendMessage([0xB0,0x26,oUserConf.active ? 0 :  1]);
+
+      oUserConf.active = !oUserConf.active;
+      setTimeout(() => {
+          if (oUserConf.active)  {
+            // activate the light bulb on xtouch mixer key
+            output.sendMessage(oUserConf.xtouch_on);
+          }
+          else {
+            output.sendMessage(oUserConf.xtouch_off);
+          }
+        },100);
     }
   }
 
@@ -83,13 +102,12 @@ input.on('message', (deltaTime, message) => {
 // Configure a callback.
 let currentMSB = -1;
 let currentLSB = -1;
-let currentValue = 0;
 inputSQ5.on('message', (deltaTime, message) => {
   // The message is an array of numbers corresponding to the MIDI bytes:
   //   [status, data1, data2]
   // https://www.cs.cf.ac.uk/Dave/Multimedia/node158.html has some helpful
   // information interpreting the messages.
-  // console.log(`SQ5 m: ${message} d: ${deltaTime}`);
+  console.log(`SQ5 message: ${message} d: ${deltaTime}`);
 
   if  (message[1] === 99) {
     currentMSB  = message[2];
@@ -107,7 +125,9 @@ inputSQ5.on('message', (deltaTime, message) => {
         return;
       }
 
-      currentValue = message[2] * 2 / 16129;
+      // this is the inverse function of:
+      // const iValue =  (Math.log2( message[2] + 1 ) / 7) * 127;
+      const currentValue = Math.pow(2, message[2] * (7/127) ) - 1;
       const msgOut =  [0xB0, oFaderConf.xtouch_fader, currentValue ];
       console.log(`sending fader ${oFaderConf.xtouch_fader} values ${msgOut}`);
       output.sendMessage(msgOut);
@@ -118,10 +138,15 @@ inputSQ5.on('message', (deltaTime, message) => {
 });
 
 // Open the input port on Behringer Xtouch Compact.
+
+console.log(`open  XTouch Compact Input`);
 input.openPort(foundMixerIndexInput);
+console.log(`open SQ5 Midi Input`);
 inputSQ5.openPort(foundSQ5IndexInput);
 
+console.log(`open Xtouch Compact Output`);
 output.openPort(foundMixerIndexOutput);
+console.log(`open SQ5 Midi Output`);
 outputSQ5.openPort(foundSQ5IndexOutput);
 // outputSQ5out.openPort(foundSQ5outIndexOutput);
 
@@ -134,7 +159,15 @@ outputSQ5.openPort(foundSQ5IndexOutput);
 // input.ignoreTypes(true, false, true)
 // input.ignoreTypes(false, false, false);
 
-// ... receive MIDI messages ...
+// ... receive MIDI messages for all faders...  after a second ...
+setTimeout(() => {
+  config.forEach(oFaderConf =>  {
+    outputSQ5.sendMessage([0xB0,0x63,oFaderConf.msb]);
+    outputSQ5.sendMessage([0xB0,0x62,oFaderConf.lsb]);
+    outputSQ5.sendMessage([0xB0,0x60,0x7F]);  //  GET command
+  })
+
+}, 1000);
 
 // Close the port when done.
 if (process.platform === "win32") {
