@@ -1,0 +1,55 @@
+[{
+    "comment":  "Redner - Inp 1",
+    "xtouch_fader": 1,
+    "msb": "0x40",
+    "lsb": "0x45"
+},
+{
+    "comment":  "Klavier - Inp 4",
+    "xtouch_fader": 2,
+    "msb": "0x40",
+    "lsb": "0x69"
+},
+{
+    "comment":  "Fenster2 - Inp 22",
+    "xtouch_fader": 3,
+    "msb": "0x42",
+    "lsb": "0x41"
+},
+{
+    "comment":  "Fenster3 - Inp 23",
+    "xtouch_fader": 4,
+    "msb": "0x42",
+    "lsb": "0x4D"
+},
+{
+    "comment":  "Fenster4 - Inp 24",
+    "xtouch_fader": 5,
+    "msb": "0x42",
+    "lsb": "0x59"
+},
+{
+    "comment":  "Fenster6 - Inp 20",
+    "xtouch_fader": 6,
+    "msb": "0x42",
+    "lsb": "0x29"
+},
+{
+    "comment":  "VornL3 - Inp 6",
+    "xtouch_fader": 7,
+    "msb": "0x41",
+    "lsb": "0x01"
+},
+{
+    "comment":  "USB - Inp 47",
+    "xtouch_fader": 8,
+    "msb": "0x44",
+    "lsb": "0x6D"
+},
+{
+    "comment":  "Aux2 -  Level",
+    "xtouch_fader": 9,
+    "msb": "0x4F",
+    "lsb": "0x02",
+    "output": true
+}]
